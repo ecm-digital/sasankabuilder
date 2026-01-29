@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Trash2, DollarSign, FileDown } from 'lucide-react';
+import { generateEstimatePDF } from '../utils/pdfGenerator';
 import { collection, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -63,18 +64,27 @@ export function Estimator() {
 
     return (
         <div className="space-y-6">
-            <header className="flex justify-between items-center">
+            <header className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Kosztorys</h1>
                     <p className="text-gray-500">Planuj koszty materiałów i robocizny</p>
                 </div>
-                <div className="bg-white px-6 py-3 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-3">
-                    <div className="bg-green-100 p-2 rounded-lg">
-                        <DollarSign className="h-6 w-6 text-green-700" />
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-500 uppercase font-semibold">Suma całkowita</p>
-                        <p className="text-2xl font-bold text-gray-900">{totalCost.toLocaleString('pl-PL')} PLN</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={() => generateEstimatePDF(items)}
+                        className="bg-white text-gray-700 px-4 py-3 rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                    >
+                        <FileDown className="h-5 w-5" />
+                        <span>Pobierz PDF</span>
+                    </button>
+                    <div className="bg-white px-6 py-3 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-3">
+                        <div className="bg-green-100 p-2 rounded-lg">
+                            <DollarSign className="h-6 w-6 text-green-700" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 uppercase font-semibold">Suma całkowita</p>
+                            <p className="text-2xl font-bold text-gray-900">{totalCost.toLocaleString('pl-PL')} PLN</p>
+                        </div>
                     </div>
                 </div>
             </header>
