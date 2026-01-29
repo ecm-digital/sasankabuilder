@@ -3,8 +3,9 @@ import { Plus, Trash2, DollarSign, FileDown, Sparkles, X } from 'lucide-react';
 import { generateEstimatePDF } from '../utils/pdfGenerator';
 import { analyzeEstimate } from '../lib/gemini';
 import Markdown from 'markdown-to-jsx';
-import { collection, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { ESTIMATE_TEMPLATE } from '../data/estimateTemplate';
 
 interface EstimateItem {
     id: string;
@@ -71,6 +72,23 @@ export function Estimator() {
         }
     };
 
+    const loadTemplate = async () => {
+        if (!confirm('To doda przykładowy kosztorys (ponad 30 pozycji) do Twojej listy. Czy kontynuować?')) return;
+
+        try {
+            const batch = writeBatch(db);
+            ESTIMATE_TEMPLATE.forEach(item => {
+                const docRef = doc(collection(db, 'estimates'));
+                batch.set(docRef, item);
+            });
+            await batch.commit();
+            alert('Kosztorys został załadowany!');
+        } catch (error) {
+            console.error("Error loading template:", error);
+            alert("Błąd ładowania szablonu.");
+        }
+    };
+
     const removeItem = async (id: string) => {
         try {
             await deleteDoc(doc(db, 'estimates', id));
@@ -89,6 +107,13 @@ export function Estimator() {
                     <p className="text-gray-500">Planuj koszty materiałów i robocizny</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={loadTemplate}
+                        className="bg-blue-50 text-blue-600 px-4 py-3 rounded-xl shadow-sm hover:bg-blue-100 transition-colors flex items-center justify-center space-x-2"
+                    >
+                        <Sparkles className="h-5 w-5" />
+                        <span>Wgraj przykładowy kosztorys</span>
+                    </button>
                     <button
                         onClick={() => setIsAiModalOpen(true)}
                         className="bg-purple-600 text-white px-4 py-3 rounded-xl shadow-sm hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
