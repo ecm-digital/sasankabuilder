@@ -3,8 +3,9 @@ import { Plus, Trash2, DollarSign, FileDown, Sparkles, X } from 'lucide-react';
 import { generateEstimatePDF } from '../utils/pdfGenerator';
 import { analyzeEstimate } from '../lib/gemini';
 import Markdown from 'markdown-to-jsx';
-import { collection, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface EstimateItem {
     id: string;
@@ -13,9 +14,11 @@ interface EstimateItem {
     quantity: number;
     unit: string;
     price: number;
+    userId: string;
 }
 
 export function Estimator() {
+    const { user } = useAuth();
     const [items, setItems] = useState<EstimateItem[]>([]);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [aiAnalysis, setAiAnalysis] = useState('');
@@ -37,7 +40,14 @@ export function Estimator() {
 
     // Subscribe to Firestore updates
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, 'estimates'), (snapshot) => {
+        if (!user) return;
+
+        const q = query(
+            collection(db, 'estimates'),
+            where('userId', '==', user.uid)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedItems = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -46,7 +56,7 @@ export function Estimator() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [user]);
 
     const [newItem, setNewItem] = useState<Partial<EstimateItem>>({
         category: 'Materiały',
@@ -54,7 +64,7 @@ export function Estimator() {
     });
 
     const addItem = async () => {
-        if (!newItem.name || !newItem.price) return;
+        if (!newItem.name || !newItem.price || !user) return;
 
         try {
             await addDoc(collection(db, 'estimates'), {
@@ -63,6 +73,7 @@ export function Estimator() {
                 quantity: newItem.quantity || 1,
                 unit: newItem.unit || 'szt',
                 price: Number(newItem.price),
+                userId: user.uid
             });
             setNewItem({ category: 'Materiały', unit: 'szt', name: '', price: 0, quantity: 1 });
         } catch (error) {
