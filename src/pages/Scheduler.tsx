@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Calendar, CheckCircle2, Circle, Clock, Home } from 'lucide-react';
-import { collection, onSnapshot, query, where, orderBy, getDocs, writeBatch, doc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { useState, useEffect, useRef } from 'react';
+import { Calendar, CheckCircle2, Circle, Clock, Home, Camera, X, Loader2 } from 'lucide-react';
+import { collection, onSnapshot, query, where, orderBy, getDocs, writeBatch, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
 
 interface Stage {
     id: string;
@@ -11,6 +12,7 @@ interface Stage {
     status: 'completed' | 'in-progress' | 'pending';
     description: string;
     order: number;
+    photos?: string[];
 }
 
 const INITIAL_STAGES = [
@@ -30,6 +32,8 @@ export function Scheduler() {
     const [selectedHouse, setSelectedHouse] = useState<string | null>(null);
     const [stages, setStages] = useState<Stage[]>([]);
     const [loading, setLoading] = useState(false);
+    const [uploadingStageId, setUploadingStageId] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const houses = [
         { id: 'lokal-a', name: 'Lokal A', desc: 'Lewa połówka (83 m²)', color: 'bg-blue-50 border-blue-200' },
@@ -80,11 +84,51 @@ export function Scheduler() {
                 description: stage.description,
                 status: stage.status,
                 order: index,
-                date: today
+                date: today,
+                photos: []
             });
         });
 
         await batch.commit();
+    };
+
+    const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>, stageId: string) => {
+        if (!event.target.files || event.target.files.length === 0) return;
+
+        const file = event.target.files[0];
+        setUploadingStageId(stageId);
+
+        try {
+            // 1. Upload to Storage
+            const storageRef = ref(storage, `stages/${stageId}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // 2. Update Firestore
+            const stageRef = doc(db, 'schedule', stageId);
+            await updateDoc(stageRef, {
+                photos: arrayUnion(downloadURL)
+            });
+
+        } catch (error) {
+            console.error("Upload failed", error);
+            alert("Błąd wysyłania zdjęcia. Sprawdź konsolę.");
+        } finally {
+            setUploadingStageId(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const removePhoto = async (stageId: string, photoUrl: string) => {
+        if (!confirm("Czy na pewno chcesz usunąć to zdjęcie?")) return;
+        try {
+            const stageRef = doc(db, 'schedule', stageId);
+            await updateDoc(stageRef, {
+                photos: arrayRemove(photoUrl)
+            });
+        } catch (error) {
+            console.error("Remove failed", error);
+        }
     };
 
     const getStatusColor = (status: Stage['status']) => {
@@ -168,7 +212,7 @@ export function Scheduler() {
 
                         <div className="space-y-0">
                             {stages.map((stage) => (
-                                <div key={stage.id} className="relative flex items-start p-6 hover:bg-gray-50 transition-colors">
+                                <div key={stage.id} className="relative flex items-start p-6 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
                                     <div className="absolute left-8 top-10 w-3 h-3 -ml-1.5 rounded-full bg-white border-2 border-gray-300 z-10"></div>
 
                                     <div className="ml-8 md:ml-12 flex-1 grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 items-start md:items-center">
@@ -176,9 +220,51 @@ export function Scheduler() {
                                             <span className="text-sm font-semibold text-gray-500">{stage.date}</span>
                                         </div>
 
-                                        <div className="md:col-span-2">
-                                            <h3 className="text-lg font-bold text-gray-900">{stage.name}</h3>
-                                            <p className="text-gray-600 text-sm">{stage.description}</p>
+                                        <div className="md:col-span-2 space-y-3">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-900">{stage.name}</h3>
+                                                <p className="text-gray-600 text-sm">{stage.description}</p>
+                                            </div>
+
+                                            {/* Photo Gallery */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {stage.photos?.map((photo, i) => (
+                                                    <div key={i} className="relative group w-16 h-16">
+                                                        <img
+                                                            src={photo}
+                                                            alt="Stage progress"
+                                                            className="w-full h-full object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90"
+                                                            onClick={() => window.open(photo, '_blank')}
+                                                        />
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); removePhoto(stage.id, photo); }}
+                                                            className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600"
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+
+                                                <div className="relative">
+                                                    <input
+                                                        type="file"
+                                                        id={`file-${stage.id}`}
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={(e) => handlePhotoUpload(e, stage.id)}
+                                                    />
+                                                    <label
+                                                        htmlFor={`file-${stage.id}`}
+                                                        className={`w-16 h-16 flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-500 hover:text-blue-600 transition-colors ${uploadingStageId === stage.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        {uploadingStageId === stage.id ? (
+                                                            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                                                        ) : (
+                                                            <Camera className="h-5 w-5 text-gray-400" />
+                                                        )}
+                                                    </label>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="flex justify-end items-center space-x-4">
