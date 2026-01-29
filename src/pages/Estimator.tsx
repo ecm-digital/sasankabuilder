@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, DollarSign } from 'lucide-react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { collection, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface EstimateItem {
     id: string;
@@ -12,35 +13,50 @@ interface EstimateItem {
 }
 
 export function Estimator() {
-    const [items, setItems] = useLocalStorage<EstimateItem[]>('sasanka-estimator-items', [
-        { id: '1', category: 'Stan Surowy', name: 'Beton B25', quantity: 15, unit: 'm3', price: 320 },
-        { id: '2', category: 'Stan Surowy', name: 'Bloczki betonowe', quantity: 500, unit: 'szt', price: 4.5 },
-    ]);
+    const [items, setItems] = useState<EstimateItem[]>([]);
+
+    // Subscribe to Firestore updates
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'estimates'), (snapshot) => {
+            const fetchedItems = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as EstimateItem[];
+            setItems(fetchedItems);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const [newItem, setNewItem] = useState<Partial<EstimateItem>>({
         category: 'Materiały',
         unit: 'szt'
     });
 
-    const addItem = () => {
+    const addItem = async () => {
         if (!newItem.name || !newItem.price) return;
 
-        setItems([
-            ...items,
-            {
-                id: Math.random().toString(36).substr(2, 9),
+        try {
+            await addDoc(collection(db, 'estimates'), {
                 category: newItem.category || 'Inne',
                 name: newItem.name,
                 quantity: newItem.quantity || 1,
                 unit: newItem.unit || 'szt',
                 price: Number(newItem.price),
-            }
-        ]);
-        setNewItem({ category: 'Materiały', unit: 'szt', name: '', price: 0, quantity: 1 });
+            });
+            setNewItem({ category: 'Materiały', unit: 'szt', name: '', price: 0, quantity: 1 });
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            alert("Błąd podczas dodawania pozycji. Sprawdź konsolę.");
+        }
     };
 
-    const removeItem = (id: string) => {
-        setItems(items.filter(item => item.id !== id));
+    const removeItem = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'estimates', id));
+        } catch (error) {
+            console.error("Error removing document: ", error);
+        }
     };
 
     const totalCost = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);

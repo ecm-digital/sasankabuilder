@@ -1,6 +1,7 @@
-
+import { useState, useEffect } from 'react';
 import { Calendar, CheckCircle2, Circle, Clock } from 'lucide-react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface Stage {
     id: string;
@@ -11,13 +12,21 @@ interface Stage {
 }
 
 export function Scheduler() {
-    const [stages] = useLocalStorage<Stage[]>('sasanka-scheduler-stages', [
-        { id: '1', name: 'Pozwolenie na budowę', date: '2024-03-01', status: 'completed', description: 'Uzyskanie prawomocnego pozwolenia' },
-        { id: '2', name: 'Fundamenty', date: '2024-04-15', status: 'in-progress', description: 'Wykop i wylanie ław fundamentowych' },
-        { id: '3', name: 'Stan zero', date: '2024-05-01', status: 'pending', description: 'Izolacja i podłoga na gruncie' },
-        { id: '4', name: 'Ściany parteru', date: '2024-05-20', status: 'pending', description: 'Murowanie ścian nośnych' },
-        { id: '5', name: 'Strop', date: '2024-06-10', status: 'pending', description: 'Szolowanie i zbrojenie stropu' },
-    ]);
+    const [stages, setStages] = useState<Stage[]>([]);
+
+    useEffect(() => {
+        // Order by date or ID to keep consistent order
+        const q = query(collection(db, 'schedule'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedStages = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Stage[];
+            setStages(fetchedStages);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const getStatusColor = (status: Stage['status']) => {
         switch (status) {
