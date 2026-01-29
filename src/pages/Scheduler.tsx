@@ -32,8 +32,8 @@ export function Scheduler() {
     const [loading, setLoading] = useState(false);
 
     const houses = [
-        { id: 'lokal-a', name: 'Lokal A', desc: 'Lewa połówka (134 m²)', color: 'bg-blue-50 border-blue-200' },
-        { id: 'lokal-b', name: 'Lokal B', desc: 'Prawa połówka (134 m²)', color: 'bg-green-50 border-green-200' },
+        { id: 'lokal-a', name: 'Lokal A', desc: 'Lewa połówka (83 m²)', color: 'bg-blue-50 border-blue-200' },
+        { id: 'lokal-b', name: 'Lokal B', desc: 'Prawa połówka (83 m²)', color: 'bg-green-50 border-green-200' },
     ];
 
     useEffect(() => {
@@ -126,8 +126,11 @@ export function Scheduler() {
                     ))}
                 </div>
                 {/* Info about initial state */}
-                <div className="bg-blue-50 p-4 rounded-xl text-blue-800 text-sm">
-                    ℹ️ Wybranie domu automatycznie załaduje szablon harmonogramu dla stanu: <strong>Surowy Otwarty z oknami</strong>.
+                <div className="bg-blue-50 p-4 rounded-xl text-blue-800 text-sm flex justify-between items-center">
+                    <span>ℹ️ Wybranie domu automatycznie załaduje szablon harmonogramu (Sasanka XL).</span>
+                    <a href="https://sasanka.eu/sasanka-xl/" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">
+                        Zobacz projekt
+                    </a>
                 </div>
             </div>
         );
