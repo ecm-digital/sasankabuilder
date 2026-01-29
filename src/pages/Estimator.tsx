@@ -196,6 +196,9 @@ export function Estimator() {
                         </button>
                     </div>
                 </div>
+                <div className="md:hidden text-center p-2 text-xs text-gray-400 bg-gray-50 border-t border-gray-100">
+                    ← Przesuń palcem, aby zobaczyć ceny →
+                </div>
             </div>
 
             {/* Items List */}

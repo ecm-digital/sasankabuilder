@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Calculator, Calendar, Home, Book, Menu, X, Construction } from 'lucide-react';
 
@@ -8,10 +8,9 @@ export function Layout() {
     const location = useLocation();
 
     // Close mobile menu when route changes
-    if (isMobileMenuOpen && location.pathname) {
-        // This effect can be handled purely by React pattern or just clicking a link closes it.
-        // For simplicity in this replacement, we'll let the NavLink click handler do it or add an onClick to Nav/Link.
-    }
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [location.pathname]);
 
     const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
     const closeMenu = () => setIsMobileMenuOpen(false);
