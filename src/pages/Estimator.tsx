@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Trash2, DollarSign } from 'lucide-react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface EstimateItem {
     id: string;
@@ -11,7 +12,7 @@ interface EstimateItem {
 }
 
 export function Estimator() {
-    const [items, setItems] = useState<EstimateItem[]>([
+    const [items, setItems] = useLocalStorage<EstimateItem[]>('sasanka-estimator-items', [
         { id: '1', category: 'Stan Surowy', name: 'Beton B25', quantity: 15, unit: 'm3', price: 320 },
         { id: '2', category: 'Stan Surowy', name: 'Bloczki betonowe', quantity: 500, unit: 'szt', price: 4.5 },
     ]);
@@ -80,7 +81,7 @@ export function Estimator() {
                             <option>Instalacje</option>
                         </select>
                     </div>
-                    <div className="md:col-span-2">
+                    <div className="sm:col-span-2 lg:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa</label>
                         <input
                             type="text"
@@ -122,49 +123,52 @@ export function Estimator() {
 
             {/* Items List */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-600">Nazwa</th>
-                            <th className="px-6 py-4 font-semibold text-gray-600">Kategoria</th>
-                            <th className="px-6 py-4 font-semibold text-gray-600 text-right">Ilość</th>
-                            <th className="px-6 py-4 font-semibold text-gray-600 text-right">Cena jedn.</th>
-                            <th className="px-6 py-4 font-semibold text-gray-600 text-right">Suma</th>
-                            <th className="px-6 py-4 font-semibold text-gray-600 w-10"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {items.map((item) => (
-                            <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4 font-medium text-gray-900">{item.name}</td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        {item.category}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-right">{item.quantity} {item.unit}</td>
-                                <td className="px-6 py-4 text-right text-gray-600">{item.price.toFixed(2)} PLN</td>
-                                <td className="px-6 py-4 text-right font-semibold text-gray-900">
-                                    {(item.quantity * item.price).toFixed(2)} PLN
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <button
-                                        onClick={() => removeItem(item.id)}
-                                        className="text-gray-400 hover:text-red-500 transition-colors"
-                                    >
-                                        <Trash2 className="h-5 w-5" />
-                                    </button>
-                                </td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left min-w-[800px]">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th className="px-6 py-4 font-semibold text-gray-600">Nazwa</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600">Kategoria</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 text-right">Ilość</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 text-right">Cena jedn.</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 text-right">Suma</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 w-10"></th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {items.map((item) => (
+                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-gray-900">{item.name}</td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            {item.category}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">{item.quantity} {item.unit}</td>
+                                    <td className="px-6 py-4 text-right text-gray-600">{item.price.toFixed(2)} PLN</td>
+                                    <td className="px-6 py-4 text-right font-semibold text-gray-900">
+                                        {(item.quantity * item.price).toFixed(2)} PLN
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button
+                                            onClick={() => removeItem(item.id)}
+                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                        >
+                                            <Trash2 className="h-5 w-5" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
 
-                {items.length === 0 && (
-                    <div className="p-12 text-center text-gray-500">
-                        Brak pozycji w kosztorysie. Dodaj pierwszą pozycję powyżej.
-                    </div>
-                )}
+                    {items.length === 0 && (
+                        <div className="p-12 text-center text-gray-500">
+                            Brak pozycji w kosztorysie. Dodaj pierwszą pozycję powyżej.
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     );

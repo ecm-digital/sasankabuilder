@@ -1,5 +1,6 @@
-import { useState } from 'react';
+
 import { Calendar, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface Stage {
     id: string;
@@ -10,7 +11,7 @@ interface Stage {
 }
 
 export function Scheduler() {
-    const [stages] = useState<Stage[]>([
+    const [stages] = useLocalStorage<Stage[]>('sasanka-scheduler-stages', [
         { id: '1', name: 'Pozwolenie na budowę', date: '2024-03-01', status: 'completed', description: 'Uzyskanie prawomocnego pozwolenia' },
         { id: '2', name: 'Fundamenty', date: '2024-04-15', status: 'in-progress', description: 'Wykop i wylanie ław fundamentowych' },
         { id: '3', name: 'Stan zero', date: '2024-05-01', status: 'pending', description: 'Izolacja i podłoga na gruncie' },
@@ -57,7 +58,7 @@ export function Scheduler() {
                             <div key={stage.id} className="relative flex items-start p-6 hover:bg-gray-50 transition-colors">
                                 <div className="absolute left-8 top-10 w-3 h-3 -ml-1.5 rounded-full bg-white border-2 border-gray-300 z-10"></div>
 
-                                <div className="ml-12 flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                                <div className="ml-8 md:ml-12 flex-1 grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 items-start md:items-center">
                                     <div className="md:col-span-1">
                                         <span className="text-sm font-semibold text-gray-500">{stage.date}</span>
                                     </div>

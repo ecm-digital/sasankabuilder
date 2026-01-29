@@ -1,20 +1,64 @@
 
-import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Calendar, Home, Book } from 'lucide-react';
+import { useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Calculator, Calendar, Home, Book, Menu, X } from 'lucide-react';
 
 export function Layout() {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const location = useLocation();
+
+    // Close mobile menu when route changes
+    if (isMobileMenuOpen && location.pathname) {
+        // This effect can be handled purely by React pattern or just clicking a link closes it.
+        // For simplicity in this replacement, we'll let the NavLink click handler do it or add an onClick to Nav/Link.
+    }
+
+    const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+    const closeMenu = () => setIsMobileMenuOpen(false);
+
     return (
-        <div className="flex h-screen bg-sasanka-light">
+        <div className="flex h-screen bg-sasanka-light relative">
+            {/* Mobile Header */}
+            <div className="lg:hidden absolute top-0 left-0 right-0 bg-sasanka-dark text-white p-4 flex justify-between items-center z-20">
+                <div className="flex items-center space-x-2">
+                    <Home className="h-6 w-6 text-sasanka-green" />
+                    <span className="text-lg font-bold">Sasanka Builder</span>
+                </div>
+                <button onClick={toggleMenu} className="p-2">
+                    {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </button>
+            </div>
+
+            {/* Sidebar Overlay for Mobile */}
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+                    onClick={closeMenu}
+                ></div>
+            )}
+
             {/* Sidebar */}
-            <aside className="w-64 bg-sasanka-dark text-white flex flex-col">
-                <div className="p-6 flex items-center space-x-2">
+            <aside className={`
+                absolute lg:relative top-0 left-0 h-full w-64 bg-sasanka-dark text-white flex flex-col z-40 transition-transform duration-300 ease-in-out
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
+                <div className="p-6 flex items-center space-x-2 hidden lg:flex">
                     <Home className="h-8 w-8 text-sasanka-green" />
                     <span className="text-xl font-bold">Sasanka Builder</span>
                 </div>
 
-                <nav className="flex-1 px-4 py-4 space-y-2">
+                {/* Mobile Menu Header inside Sidebar */}
+                <div className="p-4 flex items-center justify-between lg:hidden border-b border-white/10">
+                    <span className="font-bold text-lg">Menu</span>
+                    <button onClick={closeMenu}>
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
+
+                <nav className="flex-1 px-4 py-4 space-y-2 mt-14 lg:mt-0">
                     <NavLink
                         to="/"
+                        onClick={closeMenu}
                         className={({ isActive }) =>
                             `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'
                             }`
@@ -26,6 +70,7 @@ export function Layout() {
 
                     <NavLink
                         to="/estimator"
+                        onClick={closeMenu}
                         className={({ isActive }) =>
                             `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'
                             }`
@@ -37,6 +82,7 @@ export function Layout() {
 
                     <NavLink
                         to="/scheduler"
+                        onClick={closeMenu}
                         className={({ isActive }) =>
                             `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'
                             }`
@@ -48,6 +94,7 @@ export function Layout() {
 
                     <NavLink
                         to="/knowledge-base"
+                        onClick={closeMenu}
                         className={({ isActive }) =>
                             `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'
                             }`
@@ -64,8 +111,8 @@ export function Layout() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto">
-                <div className="p-8">
+            <main className="flex-1 overflow-auto w-full pt-16 lg:pt-0">
+                <div className="p-4 md:p-8">
                     <Outlet />
                 </div>
             </main>
