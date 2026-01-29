@@ -10,7 +10,7 @@ interface Stage {
 }
 
 export function Scheduler() {
-    const [stages, setStages] = useState<Stage[]>([
+    const [stages] = useState<Stage[]>([
         { id: '1', name: 'Pozwolenie na budowę', date: '2024-03-01', status: 'completed', description: 'Uzyskanie prawomocnego pozwolenia' },
         { id: '2', name: 'Fundamenty', date: '2024-04-15', status: 'in-progress', description: 'Wykop i wylanie ław fundamentowych' },
         { id: '3', name: 'Stan zero', date: '2024-05-01', status: 'pending', description: 'Izolacja i podłoga na gruncie' },

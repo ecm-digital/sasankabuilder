@@ -1,9 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-sasanka-green: #4CAF50;
+  --color-sasanka-dark: #2E3D30;
+  --color-sasanka-light: #F5F9F5;
+}
 
 @layer base {
   body {
-    @apply bg-sasanka-light text-gray-800 antialiased;
+    background-color: var(--color-sasanka-light);
+    color: #1f2937;
+    /* gray-800 */
+    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   }
 }
