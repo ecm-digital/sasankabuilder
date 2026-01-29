@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Calendar, Home, Book, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Calculator, Calendar, Home, Book, Menu, X, Construction } from 'lucide-react';
 
 export function Layout() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -90,6 +90,18 @@ export function Layout() {
                     >
                         <Calendar className="h-5 w-5" />
                         <span>Harmonogram (Scheduler)</span>
+                    </NavLink>
+
+                    <NavLink
+                        to="/helper"
+                        onClick={closeMenu}
+                        className={({ isActive }) =>
+                            `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                            }`
+                        }
+                    >
+                        <Construction className="h-5 w-5" />
+                        <span>Pomocnik Budowy</span>
                     </NavLink>
 
                     <NavLink
