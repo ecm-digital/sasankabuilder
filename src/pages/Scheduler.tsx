@@ -16,16 +16,47 @@ interface Stage {
 }
 
 const INITIAL_STAGES = [
-    { name: 'Stan Zero', description: 'Fundamenty, izolacje, chudy beton', status: 'completed' },
-    { name: 'Stan Surowy Otwarty', description: 'Ściany nośne, stropy, betonowanie schodów', status: 'completed' },
-    { name: 'Dach', description: 'Więźba dachowa, pokrycie, obróbki blacharskie', status: 'completed' },
-    { name: 'Stolarka Okienna', description: 'Montaż okien i drzwi wejściowych', status: 'completed' },
-    { name: 'Instalacje Elektryczne', description: 'Rozprowadzenie kabli, montaż puszek', status: 'pending' },
-    { name: 'Instalacje Sanitarne', description: 'Wod-kan, ogrzewanie podłogowe', status: 'pending' },
-    { name: 'Tynki', description: 'Tynki wewnętrzne gipsowe/cementowe', status: 'pending' },
-    { name: 'Wylewki', description: 'Posadzki betonowe (jastrych)', status: 'pending' },
-    { name: 'Elewacja', description: 'Ocieplenie styropianem, tynk zewnętrzny', status: 'pending' },
-    { name: 'Prace Wykończeniowe', description: 'Płytki, malowanie, montaż osprzętu', status: 'pending' },
+    // I. Stan Zero
+    { name: '1. Geodeta - Tyczenie', description: 'Wytyczenie budynku na działce', status: 'completed' },
+    { name: '2. Wykop pod fundamenty', description: 'Prace ziemne, zdjęcie humusu', status: 'completed' },
+    { name: '3. Chudy beton', description: 'Wylanie betonu podkładowego', status: 'completed' },
+    { name: '4. Zbrojenie ław', description: 'Przygotowanie stali zbrojeniowej', status: 'completed' },
+    { name: '5. Zalewanie ław', description: 'Betonowanie ław fundamentowych', status: 'completed' },
+    { name: '6. Ściany fundamentowe', description: 'Murowanie bloczków betonowych', status: 'completed' },
+    { name: '7. Izolacja wilgotnościowa', description: 'Dysperbit / Papa termozgrzewalna', status: 'completed' },
+    { name: '8. Ocieplenie fundamentów', description: 'Styropian aqua / Styrodur', status: 'completed' },
+    { name: '9. Folia kubełkowa', description: 'Zabezpieczenie ocieplenia', status: 'completed' },
+    { name: '10. Kanalizacja (poziomy)', description: 'Rury podposadzkowe', status: 'completed' },
+    { name: '11. Zasypanie fundamentów', description: 'Piasek + zagęszczanie mechaniczne', status: 'completed' },
+    { name: '12. Ślepa wylewka', description: 'Beton podkładowy (chudziak)', status: 'completed' },
+
+    // II. Stan Surowy Otwarty
+    { name: '13. Ściany nośne parteru', description: 'Murowanie ścian zewnętrznych i nośnych', status: 'completed' },
+    { name: '14. Szalowanie stropu', description: 'Szalunki, stemple, doki', status: 'completed' },
+    { name: '15. Zbrojenie stropu', description: 'Układanie stali, wieńce, nadproża', status: 'completed' },
+    { name: '16. Zalewanie stropu', description: 'Betonowanie stropu i schodów', status: 'completed' },
+    { name: '17. Ściany piętra', description: 'Ściany kolankowe i szczytowe', status: 'completed' },
+    { name: '18. Więźba dachowa', description: 'Montaż konstrukcji drewnianej', status: 'completed' },
+    { name: '19. Membrana i łaty', description: 'Foliowanie, kontrłaty, łaty', status: 'completed' },
+    { name: '20. Pokrycie dachu', description: 'Dachówka / Blachodachówka', status: 'completed' },
+
+    // III. Stan Surowy Zamknięty
+    { name: '21. Okna', description: 'Montaż stolarki okiennej', status: 'completed' },
+    { name: '22. Drzwi zewnętrzne', description: 'Montaż drzwi wejściowych', status: 'completed' },
+    { name: '23. Ścianki działowe', description: 'Murowanie ścian działowych', status: 'pending' },
+
+    // IV. Instalacje i Tynki
+    { name: '24. Elektryka', description: 'Okablowanie, puszki', status: 'pending' },
+    { name: '25. Hydraulika', description: 'Piony kanalizacyjne, podejścia wody', status: 'pending' },
+    { name: '26. Tynki wewnętrzne', description: 'Tynki gipsowe / cementowo-wapienne', status: 'pending' },
+    { name: '27. Ogrzewanie', description: 'Styropian podłogowy + Rurki PEX', status: 'pending' },
+    { name: '28. Wylewki', description: 'Posadzki maszynowe (Jastrych)', status: 'pending' },
+
+    // V. Wykończenie
+    { name: '29. Ocieplenie elewacji', description: 'Styropian, siatka, klej', status: 'pending' },
+    { name: '30. Tynk zewnętrzny', description: 'Tynk silikonowy / akrylowy', status: 'pending' },
+    { name: '31. Ocieplenie poddasza', description: 'Wełna mineralna / Piana PUR', status: 'pending' },
+    { name: '32. Zabudowa GK', description: 'Sufity podwieszane, skosy', status: 'pending' },
 ] as const;
 
 export function Scheduler() {
@@ -68,11 +99,6 @@ export function Scheduler() {
     }, [selectedHouse]);
 
     const seedDatabase = async (houseId: string) => {
-        // Double check to prevent race conditions
-        const q = query(collection(db, 'schedule'), where('houseId', '==', houseId));
-        const snap = await getDocs(q);
-        if (!snap.empty) return;
-
         const batch = writeBatch(db);
         const today = new Date().toISOString().split('T')[0];
 
@@ -90,6 +116,36 @@ export function Scheduler() {
         });
 
         await batch.commit();
+    };
+
+    const resetSchedule = async () => {
+        if (!selectedHouse) return;
+        if (!confirm('UWAGA: To usunie wszystkie obecne etapy i zdjęcia dla tego domu i przywróci domyślny plan. Czy na pewno?')) return;
+
+        setLoading(true);
+        try {
+            // 1. Delete existing
+            const q = query(collection(db, 'schedule'), where('houseId', '==', selectedHouse));
+            const snapshot = await getDocs(q);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            // 2. Reseed matches the logic in useEffect via snapshot listener if empty, 
+            // but since we want to be sure, let's call seed explicitly or let the effect handle it.
+            // The effect checks if snapshot.empty. After delete, it will be empty.
+            // However, firesore listener might trigger with empty before we re-seed?
+            // Actually, let's just seed immediately to be safe and fast.
+            await seedDatabase(selectedHouse);
+
+        } catch (error) {
+            console.error("Reset failed", error);
+            alert("Błąd resetowania. Sprawdź konsolę.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>, stageId: string) => {
@@ -193,10 +249,18 @@ export function Scheduler() {
                     <h1 className="text-3xl font-bold text-gray-900">Harmonogram: {houses.find(h => h.id === selectedHouse)?.name}</h1>
                     <p className="text-gray-500">Planuj i śledź postępy prac</p>
                 </div>
-                <button className="px-4 py-2 bg-sasanka-dark text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2">
-                    <Calendar className="h-5 w-5" />
-                    <span>Dodaj Etap</span>
-                </button>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={resetSchedule}
+                        className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                    >
+                        Resetuj Plan
+                    </button>
+                    <button className="px-4 py-2 bg-sasanka-dark text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2">
+                        <Calendar className="h-5 w-5" />
+                        <span>Dodaj Etap</span>
+                    </button>
+                </div>
             </header>
 
             {loading ? (
