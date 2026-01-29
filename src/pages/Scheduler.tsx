@@ -3,12 +3,10 @@ import { Calendar, CheckCircle2, Circle, Clock, Home, Camera, X, Loader2 } from 
 import { collection, onSnapshot, query, where, orderBy, getDocs, writeBatch, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
-import { useAuth } from '../contexts/AuthContext';
 
 interface Stage {
     id: string;
     houseId: string;
-    userId: string;
     name: string;
     date: string;
     status: 'completed' | 'in-progress' | 'pending';
@@ -31,7 +29,6 @@ const INITIAL_STAGES = [
 ] as const;
 
 export function Scheduler() {
-    const { user } = useAuth();
     const [selectedHouse, setSelectedHouse] = useState<string | null>(null);
     const [stages, setStages] = useState<Stage[]>([]);
     const [loading, setLoading] = useState(false);
@@ -44,12 +41,11 @@ export function Scheduler() {
     ];
 
     useEffect(() => {
-        if (!selectedHouse || !user) return;
+        if (!selectedHouse) return;
 
         setLoading(true);
         const q = query(
             collection(db, 'schedule'),
-            where('userId', '==', user.uid),
             where('houseId', '==', selectedHouse),
             orderBy('order', 'asc')
         );
@@ -57,7 +53,7 @@ export function Scheduler() {
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             if (snapshot.empty) {
                 // Seed data if empty
-                await seedDatabase(selectedHouse, user.uid);
+                await seedDatabase(selectedHouse);
             } else {
                 const fetchedStages = snapshot.docs.map(doc => ({
                     id: doc.id,
@@ -69,15 +65,11 @@ export function Scheduler() {
         });
 
         return () => unsubscribe();
-    }, [selectedHouse, user]);
+    }, [selectedHouse]);
 
-    const seedDatabase = async (houseId: string, userId: string) => {
+    const seedDatabase = async (houseId: string) => {
         // Double check to prevent race conditions
-        const q = query(
-            collection(db, 'schedule'),
-            where('userId', '==', userId),
-            where('houseId', '==', houseId)
-        );
+        const q = query(collection(db, 'schedule'), where('houseId', '==', houseId));
         const snap = await getDocs(q);
         if (!snap.empty) return;
 
@@ -87,7 +79,6 @@ export function Scheduler() {
         INITIAL_STAGES.forEach((stage, index) => {
             const docRef = doc(collection(db, 'schedule'));
             batch.set(docRef, {
-                userId,
                 houseId,
                 name: stage.name,
                 description: stage.description,
