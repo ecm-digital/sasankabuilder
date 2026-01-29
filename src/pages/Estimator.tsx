@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, DollarSign, FileDown } from 'lucide-react';
+import { Plus, Trash2, DollarSign, FileDown, Sparkles, X } from 'lucide-react';
 import { generateEstimatePDF } from '../utils/pdfGenerator';
+import { analyzeEstimate } from '../lib/gemini';
+import Markdown from 'markdown-to-jsx';
 import { collection, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -15,6 +17,23 @@ interface EstimateItem {
 
 export function Estimator() {
     const [items, setItems] = useState<EstimateItem[]>([]);
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const [aiAnalysis, setAiAnalysis] = useState('');
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleAnalyze = async () => {
+        setIsAnalyzing(true);
+        setAiAnalysis('');
+        const result = await analyzeEstimate(items);
+        setAiAnalysis(result);
+        setIsAnalyzing(false);
+    };
+
+    useEffect(() => {
+        if (isAiModalOpen && !aiAnalysis && !isAnalyzing) {
+            handleAnalyze();
+        }
+    }, [isAiModalOpen]);
 
     // Subscribe to Firestore updates
     useEffect(() => {
@@ -70,6 +89,13 @@ export function Estimator() {
                     <p className="text-gray-500">Planuj koszty materiałów i robocizny</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={() => setIsAiModalOpen(true)}
+                        className="bg-purple-600 text-white px-4 py-3 rounded-xl shadow-sm hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                        <Sparkles className="h-5 w-5" />
+                        <span>Analizuj z AI</span>
+                    </button>
                     <button
                         onClick={() => generateEstimatePDF(items)}
                         className="bg-white text-gray-700 px-4 py-3 rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
@@ -196,6 +222,47 @@ export function Estimator() {
                 </div>
 
             </div>
+            {/* AI Modal */}
+            {isAiModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center p-6 border-b border-gray-100">
+                            <div className="flex items-center space-x-2">
+                                <div className="p-2 bg-purple-100 rounded-lg">
+                                    <Sparkles className="h-6 w-6 text-purple-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900">Asystent Sasanka</h3>
+                            </div>
+                            <button
+                                onClick={() => setIsAiModalOpen(false)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto flex-1 prose prose-purple max-w-none">
+                            {isAnalyzing ? (
+                                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                                    <p className="text-gray-500">Analizuję Twój kosztorys...</p>
+                                </div>
+                            ) : (
+                                <Markdown>{aiAnalysis}</Markdown>
+                            )}
+                        </div>
+
+                        <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end">
+                            <button
+                                onClick={() => setIsAiModalOpen(false)}
+                                className="px-6 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Zamknij
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
